@@ -1,54 +1,142 @@
+#include<stdio.h>
 #include <stdlib.h>
 #include "helper_windows.h"
 #include "colorize.h"
 
-typedef struct 
+typedef struct user
 {
-
-}data;
+  char name[20];
+  char family_name[20];
+  int age;
+  char username[30];
+  char password[10]; 
+}user;
 
 void my_callback_on_key_arrival(char c);
+
+void clear()
+{
+  system("cls");
+}
 
 void make_board();
 
 void fill_board();
 
+void menu();
+
+void sign_in();
+
+void sign_up();
+
 int main()
 {
-
+  clear();
+  menu();
   
+
+  // HANDLE thread_id = start_listening(my_callback_on_key_arrival);
+
+
+
+  // WaitForSingleObject(thread_id, INFINITE);
   
-  HANDLE thread_id = start_listening(my_callback_on_key_arrival);
-
-
-
-  WaitForSingleObject(thread_id, INFINITE);
   return 0;
 }
 
 void my_callback_on_key_arrival(char c)
 {
+
 }
 
-void make_board()
+void make_board(int x,int y)
 {
-    for(int i=0 ;i<40;i++)
-    {
-        gotoxy(i,3);
-        setcolor(3);
-        printf("#");
-        gotoxy(i,40);
-        setcolor(3);
-        printf("#");
-    }
+  for(int i=0 ;i<x;i++)
+  {
+    gotoxy(i,0);
+    setcolor(3);
+    printf("#");
+    gotoxy(i,y);
+    setcolor(3);
+    printf("#");
+  }
 
-  for(int j=3;j<40;j++)
-    {
-        gotoxy(0,j);
-        setcolor(3);
-        printf("#");
-        gotoxy(40,j);
-        setcolor(3);
-        printf("#");
-    }
+  for(int j=0;j<y;j++)
+  {
+    gotoxy(0,j);
+    setcolor(3);
+    printf("#");
+    gotoxy(x,j);
+    setcolor(3);
+    printf("#");
+  }
 }
+
+void menu()
+{
+  make_board(40,5);
+  gotoxy(15,1);
+  setcolor(15);
+  printf("1-sign in");
+  gotoxy(15,2);
+  printf("2-register");
+  gotoxy(15,3);
+  setcolor(1);
+  printf("Enter your choice: ");
+  int call;
+  label: scanf("%d",&call);
+  if(call==1)
+  {
+    sign_in();
+  }
+  else if (call==2)
+  {
+    sign_up();
+  }
+  else
+  {
+    printf("choose wisely");
+    goto label;
+  }
+  
+}
+
+void sign_in()
+{
+  
+}
+
+void sign_up()
+{
+  user new_user;
+  clear();
+  make_board(40,6);
+  gotoxy(1,1);
+  setcolor(14);
+  printf("*Name:");
+  setcolor(15);
+  scanf("%s",new_user.name);
+  gotoxy(1,2);
+  setcolor(14);
+  printf("*Family Name:");
+  setcolor(15);
+  scanf("%s",new_user.family_name);
+  gotoxy(1,3);
+  setcolor(14);
+  printf("*Age:");
+  setcolor(15);
+  scanf("%d",&new_user.age);
+  gotoxy(1,4);
+  setcolor(14);
+  printf("*Username:");
+  setcolor(15);
+  scanf("%s",new_user.username);
+  gotoxy(1,5);
+  setcolor(14);
+  printf("*Password:");
+  setcolor(15);
+  scanf("%s",new_user.password);
+  FILE *file=fopen(new_user.username,"w");
+  fwrite(&new_user,sizeof(user),1,file);
+}
+
