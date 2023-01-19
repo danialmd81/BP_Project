@@ -26,13 +26,12 @@ words *head;
 words* createwords(char* word);
 void push_back(char* word);
 void pop_front();
-void print();
 void my_callback_on_key_arrival(char c);
 void clear()
 {
   system("cls");
 }
-void make_board();
+void make_board(int x,int y);
 void menu();
 void sign_in();
 void sign_up();
@@ -44,27 +43,30 @@ void hard();
 void make_normal_words();
 void make_long_words();
 void make_hard_words();
+void print(int i ,int color);
 
 int main()
 {
-  head=createwords(NULL);
+  head=createwords(NULL); 
   srand(time(NULL));
   make_normal_words();
   make_long_words();
   make_hard_words();
-  
-  menu();
-  
+  // menu();
+  easy();
   HANDLE thread_id = start_listening(my_callback_on_key_arrival);
 
-  WaitForSingleObject(thread_id,100);
+  WaitForSingleObject(thread_id,INFINITE);
   
   return 0;
 }
 
 void my_callback_on_key_arrival(char c)
 {
-
+  gotoxy(10,10);
+  setcolor(4);
+  if(head->next->word[1]==c)
+  printf("%c",c);
 }
 
 void make_board(int x,int y)
@@ -200,7 +202,7 @@ void sign_up()
   printf("*Password:");
   setcolor(15);
   scanf("%s",new_user.password);
-  FILE *file=fopen((new_user.username).txt,"w");
+  FILE *file=fopen(new_user.username,"w");
   fwrite(&new_user,sizeof(user),1,file);
   game_menu();
 }
@@ -284,6 +286,26 @@ void game_menu_history()
 
 void easy()
 {
+  
+  
+    char word[21][11];
+    FILE *normal=fopen("Normal Words.txt","r+");
+    FILE *longg=fopen("Long Words.txt","r+");
+    FILE *hard=fopen("Hard Words.txt","r+");
+    make_board(30,30);
+    for(int j=0;j<10;j++)
+    {
+      int random=(rand()%9115);
+      for(int i=0;i<random;i++)
+      {
+        fscanf(normal,"%s",word[j]);
+      }
+      push_back(word[j]);
+      rewind(normal);
+      
+    }
+    print(10,15);
+  
 
 }
 
@@ -297,17 +319,18 @@ void hard()
 
 }
 
-words* createwords(char* word)
+words* createwords(char *word)
 {
   words *newwords;
   newwords = (words *)malloc(sizeof(words));
   if(newwords == NULL) 
   {
-    printf(" Memory can not be allocated.");
+    printf("Memory can not be allocated.");
   }
   else
   {
-    newwords->word=word;
+    newwords->word=malloc(21*sizeof(char));
+    newwords->word = word;
     newwords->next = NULL;
     return newwords;
   }
@@ -315,13 +338,21 @@ words* createwords(char* word)
 
 void push_back(char* word)
 {
-  words *newwords = createwords(word);
-  words *last =head;
-  while (last->next!= NULL)
+  words *newword=createwords(word),*cur=(words*)malloc(sizeof(words));
+  cur=head->next;
+  if(head->next==NULL)
   {
-      last = last->next;
+    head->next=newword;
+
   }
-  last->next = newwords;
+  else
+  {
+    while(cur->next!=NULL)
+    {
+      cur=cur->next;
+    }
+    cur->next=newword;
+  }
   return;
 }
 
@@ -335,16 +366,6 @@ void pop_front()
     }
     head->next=front->next;
     free(front);
-}
-
-void print()
-{
-    words *print=head->next;
-    while ( print!= NULL)
-    {
-        printf("%d\n",print->word);
-        print = print->next;
-    }
 }
 
 void make_normal_words()
@@ -395,7 +416,17 @@ void make_hard_words()
   
 }
 
-
+void print(int x ,int color)
+{
+  setcolor(color);
+  words *cur=(words*)malloc(sizeof(words));
+  cur=head->next;
+  if(cur==NULL)
+  return;
+  print(10,15);
+  printf("%s\n",cur->word);
+  return;
+}
 
 
 
