@@ -1,5 +1,7 @@
 #include<stdio.h>
 #include <stdlib.h>
+#include<string.h>
+#include<time.h>
 #include "helper_windows.h"
 #include "colorize.h"
 
@@ -13,35 +15,49 @@ typedef struct user
 
 }user;
 
-void my_callback_on_key_arrival(char c);
+typedef struct words
+{
+  char* word;
+  struct words *next;
+}words;
 
+words *head;
+
+words* createwords(char* word);
+void push_back(char* word);
+void pop_front();
+void print();
+void my_callback_on_key_arrival(char c);
 void clear()
 {
   system("cls");
 }
-
 void make_board();
-
 void menu();
-
 void sign_in();
-
 void sign_up();
-
 void game_menu_history();
-
 void game_menu();
+void easy();
+void medium();
+void hard();
+void make_normal_words();
+void make_long_words();
+void make_hard_words();
 
 int main()
 {
+  head=createwords(NULL);
+  srand(time(NULL));
+  make_normal_words();
+  make_long_words();
+  make_hard_words();
+  
   menu();
   
-
   HANDLE thread_id = start_listening(my_callback_on_key_arrival);
 
-
-
-  // WaitForSingleObject(thread_id, 1000);
+  WaitForSingleObject(thread_id,100);
   
   return 0;
 }
@@ -80,9 +96,9 @@ void menu()
   make_board(40,5);
   gotoxy(15,1);
   setcolor(1);
-  printf("1-sign in");
+  printf("1.sign in");
   gotoxy(15,2);
-  printf("2-register");
+  printf("2.register");
   gotoxy(15,3);
   setcolor(2);
   printf("Enter your choice:");
@@ -125,7 +141,7 @@ void sign_in()
     gotoxy(1,2);
     setcolor(4);
     printf("Invalid Username.");
-    Sleep(2000);
+    Sleep(50);
     
     goto line107;
   }
@@ -184,17 +200,202 @@ void sign_up()
   printf("*Password:");
   setcolor(15);
   scanf("%s",new_user.password);
-  FILE *file=fopen(new_user.username,"w");
+  FILE *file=fopen((new_user.username).txt,"w");
   fwrite(&new_user,sizeof(user),1,file);
   game_menu();
 }
 
 void game_menu()
 {
-  
+  int call;
+  make_board(40,10);
+  gotoxy(15,1);
+  setcolor(1);
+  printf("Select Your Game Level:");
+  gotoxy(15,2);
+  printf("1.Easy");
+  gotoxy(15,3);
+  printf("2.Medium");
+  gotoxy(15,4);
+  printf("3.Hard");
+  setcolor(15);
+  gotoxy(38,1);
+  line203:scanf("%d",&call);
+  if(call==1)
+  {
+    easy();
+  }
+  else if(call==2)
+  {
+    medium();
+  }
+  else if(call==3)
+  {
+    hard();
+  }
+  else
+  {
+    gotoxy(15,5);
+    setcolor(4);
+    printf("Choose Wisely.");
+    gotoxy(38,1);
+    goto line203;
+  }
+
 }
 
 void game_menu_history()
 {
+  int call;
+  make_board(40,10);
+  gotoxy(15,1);
+  setcolor(1);
+  printf("Select Your Game Level:");
+  gotoxy(15,2);
+  printf("1.Easy");
+  gotoxy(15,3);
+  printf("2.Medium");
+  gotoxy(15,4);
+  printf("3.Hard");
+  setcolor(15);
+  gotoxy(38,1);
+  line203:scanf("%d",&call);
+  if(call==1)
+  {
+    easy();
+  }
+  else if(call==2)
+  {
+    medium();
+  }
+  else if(call==3)
+  {
+    hard();
+  }
+  else
+  {
+    gotoxy(15,5);
+    setcolor(4);
+    printf("Choose Wisely.");
+    gotoxy(38,1);
+    goto line203;
+  }
+}
+
+void easy()
+{
 
 }
+
+void medium()
+{
+
+}
+
+void hard()
+{
+
+}
+
+words* createwords(char* word)
+{
+  words *newwords;
+  newwords = (words *)malloc(sizeof(words));
+  if(newwords == NULL) 
+  {
+    printf(" Memory can not be allocated.");
+  }
+  else
+  {
+    newwords->word=word;
+    newwords->next = NULL;
+    return newwords;
+  }
+}
+
+void push_back(char* word)
+{
+  words *newwords = createwords(word);
+  words *last =head;
+  while (last->next!= NULL)
+  {
+      last = last->next;
+  }
+  last->next = newwords;
+  return;
+}
+
+void pop_front()
+{
+    words* front = head->next;
+    if(front==NULL)
+    {
+        printf("Impossible to delete from empty Singly Linked List");
+        return;
+    }
+    head->next=front->next;
+    free(front);
+}
+
+void print()
+{
+    words *print=head->next;
+    while ( print!= NULL)
+    {
+        printf("%d\n",print->word);
+        print = print->next;
+    }
+}
+
+void make_normal_words()
+{
+  char check[30],word[11];
+  int count;
+  FILE *file=fopen("words.txt","r+");
+  FILE *write=fopen("Normal Words.txt","w+");
+  for(int i=0;i<9998;i++)
+  {
+    fscanf(file,"%s",check);
+    if(strlen (check)<=10)
+    {
+      fprintf(write,"%s\n",check);
+    }
+  }
+}
+
+void make_long_words()
+{
+   char check[30],word[11];
+    int count;
+    FILE *file=fopen("words.txt","r+");
+    FILE *write=fopen("Long Words.txt","w+");
+    for(int i=0;i<9998;i++)
+    {
+      fscanf(file,"%s",check);
+      if(strlen (check)>10&&strlen (check)<=20)
+      {
+        fprintf(write,"%s\n",check);
+      }
+    }
+}
+
+void make_hard_words()
+{
+  FILE *hard_file=fopen("Hard Words.txt","w");
+  
+  for(int j=0;j<1000;j++)
+  {
+    int randd=(rand()%19)+1;
+    for(int i=0;i<randd;i++)
+    {
+      putc((rand()%96)+32,hard_file);
+    }
+    fputs("\n",hard_file);
+  }
+  
+}
+
+
+
+
+
