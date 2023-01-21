@@ -379,7 +379,6 @@ void easy()
         printf("%s",cur->word);
         gotoxy(15,row-t);
         cur=cur->next;
-        len=0;
         if(row==40)
           {
             gotoxy(0,41);
