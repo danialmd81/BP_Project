@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include<string.h>
 #include<time.h>
+#include<math.h>
 #include <windows.h>
 #include "helper_windows.h"
 #include "colorize.h"
@@ -26,7 +27,7 @@ typedef struct words
 words *head;
 words *tail;
 words *cur_ptr;
-int len=0,row=1,num_word_har_dor=0,cruser=1,num_dor=0,num_all_words=0;
+int len=0,row=1,col=15,num_word_har_dor=0,cruser=1,num_dor=0,num_all_words=0;
 double timee;
 HANDLE thread_id;
 words* createwords(char* word);
@@ -82,39 +83,43 @@ void my_callback_on_key_arrival(char c)
   
   if(head->next->word[len]==c)
   {
+    gotoxy(col,row-1);
     setcolor(4);
     printf("%c",head->next->word[len]);
     setcolor(15);
+    col++;
     len++;
     if(len==strlen(head->next->word))
     {
-      head=head->next;
+      pop_front();
       num_all_words--;
       row--;
+      len=0;
+      col=15;
       print(15);
       return;
     }
   }
   else if(head->next->word[len]!=c)
   {
+    gotoxy(col,row-1);
     setcolor(6);
     printf("%c",head->next->word[len]);
     setcolor(15);
+    col++;
     len++;
     if(len==strlen(head->next->word))
     {
-      head=head->next;
+      pop_front();
       num_all_words--;
       row--;
+      len=0;
+      col=15;
       print(15);
       return;
     }
   }
-  if(row==40)
-  {
-    gotoxy(0,41);
-    exit(0);
-  }
+
   
 }
 
@@ -340,12 +345,11 @@ void easy()
 {
   make_board(40,40); 
   timee=10000.000;
-  for(int t=0;timee>100.000;t++)
+  for(int t=0;timee>1000.000;t++)
   {
-    
-    char word[21][11];
+    char word[21][50];
     int num_normal_word=10,num_hard_word=10-num_normal_word;
-    for(int i=0;i<10;i++)
+    for(int i=0;i<50;i++)
     {
       int choose = (rand()%10)+1;
       if(choose>num_hard_word)
@@ -365,40 +369,45 @@ void easy()
         }
       }      
     }
-    thread_id = start_listening(my_callback_on_key_arrival);
-    for(num_word_har_dor=0;num_word_har_dor<10;)
-    {
-      words *cur=head->next;
-      for(int t=0;cur!=NULL&&t<=num_all_words;t++)
-      {
-        setcolor(15);
-        gotoxy(15,row-t);
-        char s[20]="                ";
-        printf("%s",s);
-        gotoxy(15,row-t);
-        printf("%s",cur->word);
-        gotoxy(15,row-t);
-        cur=cur->next;
-        if(row==40)
-          {
-            gotoxy(0,41);
-            exit(0);
-          }
-
-      }
-      gotoxy(15,row);
-      num_all_words++;
-      num_word_har_dor++;
-      row++;
-      Sleep(timee);
-      if(row==40)
-      {
-        gotoxy(0,41);
-        exit(0);
-      }
-    }
     num_normal_word=num_normal_word*(.935);
     timee =timee*(0.8);
+  }
+  thread_id = start_listening(my_callback_on_key_arrival);
+  timee=10000.000;
+  for(num_dor=0;timee>1000.000;num_dor++)
+  {
+    for(num_word_har_dor=0;num_word_har_dor<10;)
+    {
+      print(15);
+      // words *cur=head->next;
+      // for(int t=0;cur!=NULL&&t<=num_all_words;t++)
+      // {
+      //   printf("\n");
+      //   setcolor(15);
+      //   gotoxy(15,row-t);
+      //   char s[20]="                ";
+      //   printf("%s",s);
+      //   gotoxy(15,row-t);
+      //   printf("%s%d%d",cur->word,num_word_har_dor,num_dor);
+      //   gotoxy(15,row-t);
+      //   cur=cur->next;
+      //   if(row==40)
+      //     {
+      //       gotoxy(0,41);
+      //       exit(0);
+      //     }
+      // }
+      // gotoxy(col,row);
+      // num_all_words++;
+      // num_word_har_dor++;
+      // row++;
+      // if(row==40)
+      // {
+      //   gotoxy(0,41);
+      //   exit(0);
+      // }
+      Sleep(timee);
+    }
   }
 }
 
@@ -454,7 +463,14 @@ void push_back(char* word)
 
 void pop_front()
 {
-    cur_ptr=cur_ptr->next;
+  words *temp = head->next;
+  if(head->next==NULL)
+  {
+      printf("Impossible to delete from empty Singly Linked List");
+      return;
+  }
+  head->next=head->next->next;
+  free(temp);
 }
 
 void make_normal_words()
@@ -517,23 +533,30 @@ void print(int color)
     char s[20]="                ";
     printf("%s",s);
     gotoxy(15,row-t);
-    printf("%s",cur->word);
-    gotoxy(15,row-t);
+    printf("%s%d%d",cur->word,num_word_har_dor,num_dor);
     cur=cur->next;
-    
+    if(num_word_har_dor==9)
+    {
+      num_dor++;
+      timee=timee*0.8;
+      printf("\n%lf\n",timee);
+      num_word_har_dor=0;
+      if(timee<=1000)
+      {
+        gotoxy(0,41);
+        exit(0);
+      }
+    }
     if(row==40)
       {
         gotoxy(0,41);
         exit(0);
       }
-    
   }
-  len=0;
-  gotoxy(15,row);
+  gotoxy(col,row);
   num_all_words++;
   num_word_har_dor++;
   row++;
-
 }
 
 char*chose_word_from_normal(char* word)
