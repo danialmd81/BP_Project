@@ -7,6 +7,13 @@
 #include "helper_windows.h"
 #include "colorize.h"
 
+typedef struct history
+{
+  unsigned long long int score;
+  char time[15];
+  char level[10];
+  int turn; 
+}history;
 typedef struct user
 {
   char name[20];
@@ -14,7 +21,7 @@ typedef struct user
   int age;
   char username[30];
   char password[10]; 
-
+  history historyy[4];
 }user;
 
 typedef struct words
@@ -25,10 +32,8 @@ typedef struct words
 }words;
 
 words *head;
-words *tail;
-words *cur_ptr;
-int len=0,row=1,col=15,num_word_har_dor=0,cruser=1,num_dor=0,num_all_words=0;
-double timee;
+int len=0,row=1,col=15,num_word_har_dor=0,num_dor=0,num_all_words=0;
+double timee,discount;
 HANDLE thread_id;
 words* createwords(char* word);
 
@@ -54,7 +59,7 @@ void hard();
 void make_normal_words();
 void make_long_words();
 void make_hard_words();
-void print(int color);
+void print(int color,double discount);
 char*chose_word_from_normal(char* word);
 char*chose_word_from_long(char* word);
 char*chose_word_from_hard(char* word);
@@ -64,66 +69,90 @@ void hidecursor();
 int main()
 {
   head=createwords(NULL);
-  tail=createwords(NULL);
-  cur_ptr=createwords(NULL);
-  cur_ptr=head;
   srand(time(NULL));
   make_normal_words();
   make_long_words();
   make_hard_words();
   hidecursor();
   // menu();
-  easy();
+  medium();
   WaitForSingleObject(thread_id,INFINITE);
   return 0;
 }
 
 void my_callback_on_key_arrival(char c)
 {
-  
-  if(head->next->word[len]==c)
+  if(c==head->next->word[len])
+  {
+    gotoxy(col,row-1);
+    setcolor(2);
+    printf("%c",head->next->word[len]);
+    col++;
+    len++;
+    if(len==strlen(head->next->word))
+    {
+      head=head->next;
+      num_all_words--;
+      row--;
+      len=0;
+      col=15;
+      Sleep(100);
+      print(15,discount);
+      return;
+    }  
+    return; 
+  }
+  if(c!=head->next->word[len]&&c!='\b')
   {
     gotoxy(col,row-1);
     setcolor(4);
     printf("%c",head->next->word[len]);
-    setcolor(15);
     col++;
     len++;
     if(len==strlen(head->next->word))
     {
-      pop_front();
+      head=head->next;
       num_all_words--;
       row--;
       len=0;
       col=15;
-      print(15);
+      Sleep(100);
+      print(15,discount);
       return;
-    }
+    }  
+    return;
   }
-  else if(head->next->word[len]!=c)
+  if(c=='\b')
   {
-    gotoxy(col,row-1);
-    setcolor(6);
-    printf("%c",head->next->word[len]);
-    setcolor(15);
-    col++;
-    len++;
-    if(len==strlen(head->next->word))
+    if(len!=0)
     {
-      pop_front();
-      num_all_words--;
-      row--;
-      len=0;
-      col=15;
-      print(15);
-      return;
+      len--;
+      col--;
     }
+    gotoxy(col,row-1);
+    setcolor(7);
+    printf("%c",head->next->word[len]);
+    if(len==0&&num_all_words!=0)
+    {
+      if(head->back!=NULL)
+      {
+        head=head->back;
+        len++;
+        row--; 
+        num_all_words--;
+        len=strlen(head->next->word)-1;
+        col=strlen(head->next->word)+14;
+        Sleep(100);
+        print(15,discount);
+        return;
+      }
+    }
+    return;
   }
-
   
+
+    
 }
-
-
 
 void make_board(int x,int y)
 {
@@ -345,31 +374,32 @@ void easy()
 {
   make_board(40,40); 
   timee=10000.000;
+  discount=0.8;
   for(int t=0;timee>1000.000;t++)
   {
-    char word[21][50];
-    int num_normal_word=10,num_hard_word=10-num_normal_word;
-    for(int i=0;i<50;i++)
+    char word[21][110];
+    int num_normal_word=10,num_long_word=0;
+    for(int i=0;i<40;i++)
     {
       int choose = (rand()%10)+1;
-      if(choose>num_hard_word)
+      if(choose>(10-num_normal_word))
       {
         push_back(chose_word_from_normal(word[i]));
       }
+      else if(choose<=num_long_word)
+      {
+        push_back(chose_word_from_long(word[i]));
+      }
       else
       {
-        int choose1=(rand()%num_hard_word)+1;
-        if(choose1==3)
-        {
-          push_back(chose_word_from_hard(word[i]));
-        }
-        else
-        {
-          push_back(chose_word_from_long(word[i]));
-        }
-      }      
+        push_back(chose_word_from_hard(word[i]));
+      }
+    }      
+    num_normal_word--;
+    if(t%3!=1)
+    {
+      num_long_word++;
     }
-    num_normal_word=num_normal_word*(.935);
     timee =timee*(0.8);
   }
   thread_id = start_listening(my_callback_on_key_arrival);
@@ -378,48 +408,93 @@ void easy()
   {
     for(num_word_har_dor=0;num_word_har_dor<10;)
     {
-      print(15);
-      // words *cur=head->next;
-      // for(int t=0;cur!=NULL&&t<=num_all_words;t++)
-      // {
-      //   printf("\n");
-      //   setcolor(15);
-      //   gotoxy(15,row-t);
-      //   char s[20]="                ";
-      //   printf("%s",s);
-      //   gotoxy(15,row-t);
-      //   printf("%s%d%d",cur->word,num_word_har_dor,num_dor);
-      //   gotoxy(15,row-t);
-      //   cur=cur->next;
-      //   if(row==40)
-      //     {
-      //       gotoxy(0,41);
-      //       exit(0);
-      //     }
-      // }
-      // gotoxy(col,row);
-      // num_all_words++;
-      // num_word_har_dor++;
-      // row++;
-      // if(row==40)
-      // {
-      //   gotoxy(0,41);
-      //   exit(0);
-      // }
+      print(15,discount);
       Sleep(timee);
     }
   }
 }
 
-
 void medium()
 {
+  make_board(40,40); 
+  timee=8000.000;
+  discount=0.7;
+  for(int t=0;timee>1000.000;t++)
+  {
+    char word[21][40];
+    int num_normal_word=5,num_hard_word=0;
+    for(int i=0;i<40;i++)
+    {
+      int choose = (rand()%10)+1;
+      if(choose>(10-num_normal_word))
+      {
+        push_back(chose_word_from_normal(word[i]));
+      }
+      else if(choose<=num_hard_word)
+      {
+        push_back(chose_word_from_hard(word[i]));
+      }
+      else
+      {
+        push_back(chose_word_from_long(word[i]));
+      }
+    }      
+    num_normal_word--;
+    num_hard_word++;
+    timee =timee*(0.7);
+  }
+  thread_id = start_listening(my_callback_on_key_arrival);
+  timee=8000.000;
+  for(num_dor=0;timee>1000.000;num_dor++)
+  {
+    for(num_word_har_dor=0;num_word_har_dor<10;)
+    {
+      print(15,discount);
+      Sleep(timee);
+    }
+  }
 
 }
 
 void hard()
 {
-
+  make_board(40,40); 
+  timee=5000.000;
+  discount=0.6;
+  for(int t=0;timee>1000.000;t++)
+  {
+    char word[21][40];
+    int num_normal_word=3,num_hard_word=1;
+    for(int i=0;i<40;i++)
+    {
+      int choose = (rand()%10)+1;
+      if(choose>(10-num_normal_word))
+      {
+        push_back(chose_word_from_normal(word[i]));
+      }
+      else if(choose<=num_hard_word)
+      {
+        push_back(chose_word_from_hard(word[i]));
+      }
+      else
+      {
+        push_back(chose_word_from_long(word[i]));
+      }
+    }      
+    num_normal_word--;
+    num_hard_word++;
+    timee =timee*(0.6);
+  }
+  thread_id = start_listening(my_callback_on_key_arrival);
+  timee=5000.000;
+  for(num_dor=0;timee>1000.000;num_dor++)
+  {
+    for(num_word_har_dor=0;num_word_har_dor<10;)
+    {
+      print(15,discount);
+      Sleep(timee);
+    }
+  }
 }
 
 words* createwords(char *word)
@@ -447,7 +522,7 @@ void push_back(char* word)
   if(head->next==NULL)
   {
     head->next=newword;
-    tail->back=newword;
+    newword->back=head;
   }
   else
   {
@@ -457,7 +532,6 @@ void push_back(char* word)
     }
     cur->next=newword;
     newword->back=cur;
-    tail->back=newword;
   }
 }
 
@@ -469,7 +543,6 @@ void pop_front()
       printf("Impossible to delete from empty Singly Linked List");
       return;
   }
-  head->next=head->next->next;
   free(temp);
 }
 
@@ -523,23 +596,22 @@ void make_hard_words()
   fclose(file);
 }
 
-void print(int color)
+void print(int color,double discount)
 {
   words *cur=head->next;
   for(int t=0;cur!=NULL&&t<=num_all_words;t++)
-  {
-    setcolor(color);
+  { 
+    setcolor(color); 
     gotoxy(15,row-t);
     char s[20]="                ";
     printf("%s",s);
     gotoxy(15,row-t);
-    printf("%s%d%d",cur->word,num_word_har_dor,num_dor);
+    printf("%s",cur->word);
     cur=cur->next;
     if(num_word_har_dor==9)
     {
       num_dor++;
-      timee=timee*0.8;
-      printf("\n%lf\n",timee);
+      timee=timee*discount;
       num_word_har_dor=0;
       if(timee<=1000)
       {
