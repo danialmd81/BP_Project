@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include<string.h>
 #include<time.h>
+#include <windows.h>
 #include "helper_windows.h"
 #include "colorize.h"
 
@@ -19,14 +20,23 @@ typedef struct words
 {
   char* word;
   struct words *next;
+  struct words *back;
 }words;
 
 words *head;
-
+words *tail;
+words *cur_ptr;
+int len=0,row=1,num_word_har_dor=0,cruser=1,num_dor=0,num_all_words=0;
+double timee;
+HANDLE thread_id;
 words* createwords(char* word);
+
 void push_back(char* word);
+
 void pop_front();
+
 void my_callback_on_key_arrival(char c);
+
 void clear()
 {
   system("cls");
@@ -43,31 +53,72 @@ void hard();
 void make_normal_words();
 void make_long_words();
 void make_hard_words();
-void print(int i ,int color);
+void print(int color);
+char*chose_word_from_normal(char* word);
+char*chose_word_from_long(char* word);
+char*chose_word_from_hard(char* word);
+void hidecursor();
+
 
 int main()
 {
-  head=createwords(NULL); 
+  head=createwords(NULL);
+  tail=createwords(NULL);
+  cur_ptr=createwords(NULL);
+  cur_ptr=head;
   srand(time(NULL));
   make_normal_words();
   make_long_words();
   make_hard_words();
+  hidecursor();
   // menu();
   easy();
-  HANDLE thread_id = start_listening(my_callback_on_key_arrival);
-
   WaitForSingleObject(thread_id,INFINITE);
-  
   return 0;
 }
 
 void my_callback_on_key_arrival(char c)
 {
-  gotoxy(10,10);
-  setcolor(4);
-  if(head->next->word[1]==c)
-  printf("%c",c);
+  
+  if(head->next->word[len]==c)
+  {
+    setcolor(4);
+    printf("%c",head->next->word[len]);
+    setcolor(15);
+    len++;
+    if(len==strlen(head->next->word))
+    {
+      head=head->next;
+      num_all_words--;
+      row--;
+      print(15);
+      return;
+    }
+  }
+  else if(head->next->word[len]!=c)
+  {
+    setcolor(6);
+    printf("%c",head->next->word[len]);
+    setcolor(15);
+    len++;
+    if(len==strlen(head->next->word))
+    {
+      head=head->next;
+      num_all_words--;
+      row--;
+      print(15);
+      return;
+    }
+  }
+  if(row==40)
+  {
+    gotoxy(0,41);
+    exit(0);
+  }
+  
 }
+
+
 
 void make_board(int x,int y)
 {
@@ -225,6 +276,7 @@ void game_menu()
   line203:scanf("%d",&call);
   if(call==1)
   {
+
     easy();
   }
   else if(call==2)
@@ -286,28 +338,71 @@ void game_menu_history()
 
 void easy()
 {
-  
-  
+  make_board(40,40); 
+  timee=10000.000;
+  for(int t=0;timee>100.000;t++)
+  {
+    
     char word[21][11];
-    FILE *normal=fopen("Normal Words.txt","r+");
-    FILE *longg=fopen("Long Words.txt","r+");
-    FILE *hard=fopen("Hard Words.txt","r+");
-    make_board(30,30);
-    for(int j=0;j<10;j++)
+    int num_normal_word=10,num_hard_word=10-num_normal_word;
+    for(int i=0;i<10;i++)
     {
-      int random=(rand()%9115);
-      for(int i=0;i<random;i++)
+      int choose = (rand()%10)+1;
+      if(choose>num_hard_word)
       {
-        fscanf(normal,"%s",word[j]);
+        push_back(chose_word_from_normal(word[i]));
       }
-      push_back(word[j]);
-      rewind(normal);
-      
+      else
+      {
+        int choose1=(rand()%num_hard_word)+1;
+        if(choose1==3)
+        {
+          push_back(chose_word_from_hard(word[i]));
+        }
+        else
+        {
+          push_back(chose_word_from_long(word[i]));
+        }
+      }      
     }
-    print(10,15);
-  
+    thread_id = start_listening(my_callback_on_key_arrival);
+    for(num_word_har_dor=0;num_word_har_dor<10;)
+    {
+      words *cur=head->next;
+      for(int t=0;cur!=NULL&&t<=num_all_words;t++)
+      {
+        setcolor(15);
+        gotoxy(15,row-t);
+        char s[20]="                ";
+        printf("%s",s);
+        gotoxy(15,row-t);
+        printf("%s",cur->word);
+        gotoxy(15,row-t);
+        cur=cur->next;
+        len=0;
+        if(row==40)
+          {
+            gotoxy(0,41);
+            exit(0);
+          }
 
+      }
+      gotoxy(15,row);
+      num_all_words++;
+      num_word_har_dor++;
+      row++;
+      Sleep(timee);
+      if(row==40)
+      {
+        gotoxy(0,41);
+        exit(0);
+      }
+    }
+    num_normal_word=num_normal_word*(.935);
+    timee =timee*(0.8);
+  }
 }
+
 
 void medium()
 {
@@ -332,18 +427,19 @@ words* createwords(char *word)
     newwords->word=malloc(21*sizeof(char));
     newwords->word = word;
     newwords->next = NULL;
+    newwords->back = NULL;
     return newwords;
   }
 }
 
 void push_back(char* word)
 {
-  words *newword=createwords(word),*cur=(words*)malloc(sizeof(words));
+  words *newword=createwords(word),*cur;
   cur=head->next;
   if(head->next==NULL)
   {
     head->next=newword;
-
+    tail->back=newword;
   }
   else
   {
@@ -352,20 +448,14 @@ void push_back(char* word)
       cur=cur->next;
     }
     cur->next=newword;
+    newword->back=cur;
+    tail->back=newword;
   }
-  return;
 }
 
 void pop_front()
 {
-    words* front = head->next;
-    if(front==NULL)
-    {
-        printf("Impossible to delete from empty Singly Linked List");
-        return;
-    }
-    head->next=front->next;
-    free(front);
+    cur_ptr=cur_ptr->next;
 }
 
 void make_normal_words()
@@ -382,6 +472,7 @@ void make_normal_words()
       fprintf(write,"%s\n",check);
     }
   }
+  fclose(file);
 }
 
 void make_long_words()
@@ -398,35 +489,98 @@ void make_long_words()
         fprintf(write,"%s\n",check);
       }
     }
+    fclose(file);
 }
 
 void make_hard_words()
 {
-  FILE *hard_file=fopen("Hard Words.txt","w");
+  FILE *file=fopen("Hard Words.txt","w");
   
-  for(int j=0;j<1000;j++)
+  for(int j=0;j<999;j++)
   {
-    int randd=(rand()%19)+1;
+    int randd=(rand()%20)+1;
     for(int i=0;i<randd;i++)
     {
-      putc((rand()%96)+32,hard_file);
+      putc((rand()%96)+32,file);
     }
-    fputs("\n",hard_file);
+    fputs("\n",file);
   }
-  
+  fclose(file);
 }
 
-void print(int x ,int color)
+void print(int color)
 {
-  setcolor(color);
-  words *cur=(words*)malloc(sizeof(words));
-  cur=head->next;
-  if(cur==NULL)
-  return;
-  print(10,15);
-  printf("%s\n",cur->word);
-  return;
+  words *cur=head->next;
+  for(int t=0;cur!=NULL&&t<=num_all_words;t++)
+  {
+    setcolor(color);
+    gotoxy(15,row-t);
+    char s[20]="                ";
+    printf("%s",s);
+    gotoxy(15,row-t);
+    printf("%s",cur->word);
+    gotoxy(15,row-t);
+    cur=cur->next;
+    
+    if(row==40)
+      {
+        gotoxy(0,41);
+        exit(0);
+      }
+    
+  }
+  len=0;
+  gotoxy(15,row);
+  num_all_words++;
+  num_word_har_dor++;
+  row++;
+
 }
 
+char*chose_word_from_normal(char* word)
+{
+  word=malloc(21*sizeof(char));
+  FILE *normal=fopen("Normal Words.txt","r+");
+  int random=(rand()%9115);
+    for(int i=0;i<random;i++)
+    {
+      fscanf(normal,"%s",word);
+    }
+  return word;
+
+}
+
+char*chose_word_from_long(char* word)
+{
+  word=malloc(21*sizeof(char));
+  FILE *longg=fopen("Long Words.txt","r+");
+  int random=(rand()%741);
+    for(int i=0;i<random;i++)
+    {
+      fscanf(longg,"%s",word);
+    }
+  return word;
+}
+
+char*chose_word_from_hard(char* word)
+{
+  word=malloc(21*sizeof(char));
+  FILE *hard=fopen("Hard Words.txt","r+"); 
+  int random=(rand()%1000);
+    for(int i=0;i<random;i++)
+    {
+      fscanf(hard,"%s",word);
+    }
+  return word;
+}
+
+void hidecursor()
+{
+   HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+   CONSOLE_CURSOR_INFO info;
+   info.dwSize = 100;
+   info.bVisible = FALSE;
+   SetConsoleCursorInfo(consoleHandle, &info);
+}
 
 
