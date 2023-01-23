@@ -32,7 +32,7 @@ typedef struct words
   struct words *back;
 }words;
 
-FILE *file;
+
 user new_user;
 char username[30];
 words *head;
@@ -71,7 +71,7 @@ char*chose_word_from_hard(char* word);
 void hidecursor();
 void game_over();
 void victory();
-void score(int x,int y);
+void make_score_board(int x,int y);
 
 
 int main()
@@ -83,8 +83,9 @@ int main()
   make_hard_words();
   hidecursor();
   // easy();
+  hard();
   // menu();
-  victory();
+  // game_menu_history();
   WaitForSingleObject(thread_id,INFINITE);
   return 0;
 }
@@ -93,6 +94,7 @@ void my_callback_on_key_arrival(char c)
 {
   if(num_all_deleted_word==max_word)
   {
+    victory();
     return;
   }
   if(c==head->next->word[len]&&num_all_deleted_word<max_word)
@@ -113,12 +115,24 @@ void my_callback_on_key_arrival(char c)
       col=10;
       if(strlen(head->word)<=10)
       {
-        scoree++;
-        Sleep(100);
-        print(7,discount);
+        if(strpbrk(head->word,"!\"#$&'()*+,-./:;<>.?@_[]\\^'{}|~")==NULL)
+        {
+          scoree++;
+          Sleep(100);
+          print(7,discount);
+          return;
+        }
+        if(strpbrk(head->word,"!\"#$&'()*+,-./:;<>.?@_[]\\^'{}|~")!=NULL)
+        {
+          scoree+=3;
+          Sleep(100);
+          print(7,discount);
+          return;
+        }
         return;
       }
-      else
+
+      if(strlen(head->word)>10&&strlen(head->word)<=20)
       {
         if(strpbrk(head->word,"!\"#$&'()*+,-./:;<>.?@_[]\\^'{}|~")==NULL)
         {
@@ -127,14 +141,16 @@ void my_callback_on_key_arrival(char c)
           print(7,discount);
           return;
         }
-        else
+        if(strpbrk(head->word,"!\"#$&'()*+,-./:;<>.?@_[]\\^'{}|~")!=NULL)
         {
           scoree+=3;
           Sleep(100);
           print(7,discount);
           return;
         }
+        return;
       }
+      return;
     }
     return;
   }
@@ -174,13 +190,14 @@ void my_callback_on_key_arrival(char c)
     printf("%c",head->next->word[len]);
     if(len==0)
     {
-      if(head->back!=NULL&&row<0)
+      if(head->back!=NULL&&row>0)
       {
+        num_all_deleted_word--;
         head=head->back;
+        len++;
         row--;
         num_check_word--;
-        num_all_deleted_word--;
-        len=strlen(head->next->word);
+        len=strlen(head->next->word)-1;
         col=strlen(head->next->word)+9;
         Sleep(100);
         print(7,discount);
@@ -190,7 +207,6 @@ void my_callback_on_key_arrival(char c)
     }
     return;
   }
-
 
 }
 
@@ -223,14 +239,14 @@ void make_board(int x,int y)
 void menu()
 {
   make_board(40,5);
-  gotoxy(10,1);
+  gotoxy(2,1);
   setcolor(1);
   printf("1.sign in");
-  gotoxy(10,2);
+  gotoxy(2,2);
   printf("2.register");
-  gotoxy(10,3);
+  gotoxy(2,3);
   setcolor(2);
-  printf("Enter your choice:");
+  printf("*Enter your choice:");
   setcolor(7);
   int call;
   line87: scanf("%d",&call);
@@ -245,10 +261,10 @@ void menu()
   }
   else
   {
-    gotoxy(10,4);
+    gotoxy(2,4);
     setcolor(4);
     printf("Choose Wisely.");
-    gotoxy(33,3);
+    gotoxy(24,3);
     goto line87;
   }
 
@@ -256,24 +272,25 @@ void menu()
 
 void sign_in()
 {
+  FILE *file;
   line107:make_board(40,6);
-  gotoxy(1,1);
+  gotoxy(2,1);
   setcolor(6);
   printf("*Username:");
   setcolor(7);
   scanf("%s",username);
-  file=fopen(username,"r+");
+  file=fopen(username,"r");
   if(file==NULL)
   {
-    gotoxy(1,2);
+    gotoxy(2,2);
     setcolor(4);
     printf("Invalid Username.");
-    Sleep(100);
+    Sleep(1000);
     goto line107;
   }
   else
   {
-    line123: gotoxy(1,2);
+    line123: gotoxy(2,2);
     setcolor(6);
     printf("*password:");
     setcolor(7);
@@ -287,12 +304,16 @@ void sign_in()
     }
     else
     {
-      gotoxy(1,3);
+      gotoxy(2,3);
       setcolor(4);
       printf("Invalid Password.");
+      Sleep(1000);
+      gotoxy(2,3);
+      printf("                  ");
       goto line123;
     }
   }
+  fclose(file);
 }
 
 void sign_up()
@@ -326,27 +347,27 @@ void sign_up()
   scanf("%s",new_user.password);
   FILE *file=fopen(new_user.username,"w+");
   fwrite(&new_user,sizeof(user),1,file);
+  fclose(file);
   game_menu();
 }
 
 void game_menu()
 {
-  make_board(40,10);
-  gotoxy(10,1);
+  make_board(40,6);
+  gotoxy(2,1);
   setcolor(1);
   printf("Select Your Game Level:");
-  gotoxy(10,2);
+  gotoxy(2,2);
   printf("1.Easy");
-  gotoxy(10,3);
+  gotoxy(2,3);
   printf("2.Medium");
-  gotoxy(10,4);
+  gotoxy(2,4);
   printf("3.Hard");
   setcolor(7);
-  gotoxy(38,1);
+  gotoxy(24,1);
   line203:scanf("%d",&call);
   if(call==1)
   {
-
     easy();
   }
   else if(call==2)
@@ -359,10 +380,9 @@ void game_menu()
   }
   else
   {
-    gotoxy(10,5);
+    gotoxy(2,5);
     setcolor(4);
     printf("Choose Wisely.");
-    gotoxy(33,1);
     goto line203;
   }
 
@@ -370,33 +390,41 @@ void game_menu()
 
 void game_menu_history()
 {
-  make_board(40,10);
-  gotoxy(10,1);
+  make_board(50,10);
+  gotoxy(2,1);
   setcolor(1);
   printf("Select Your Game Level:");
-  gotoxy(10,2);
+  gotoxy(2,2);
   setcolor(6);
   printf("1.Easy");
-  gotoxy(10,3);
+  gotoxy(2,3);
   printf("2.Medium");
-  gotoxy(10,4);
+  gotoxy(2,4);
   printf("3.Hard");
-  gotoxy(10,5);
+  gotoxy(2,5);
   setcolor(2);
-  printf("4.");
-  if()
+  printf("4.date:%d/%d/%d  level:%s  score:%d  turn:%d",new_user.historyy[0].day,
+  new_user.historyy[0].month,new_user.historyy[0].year,new_user.historyy[0].level,
+  new_user.historyy[0].score,new_user.historyy[0].turn);
+
+  if(new_user.historyy[1].level!=NULL)
   {
-    gotoxy(10,6);
-    printf("5.");
+    gotoxy(2,6);
+    printf("5.date:%d/%d/%d  level:%s  score:%d  turn:%d",new_user.historyy[1].day,
+    new_user.historyy[1].month,new_user.historyy[1].year,new_user.historyy[1].level,
+    new_user.historyy[1].score,new_user.historyy[1].turn);
   }
-  if()
+
+  if(new_user.historyy[2].level!=NULL)
   {
-    gotoxy(10,7);
-    printf("6.");
+    gotoxy(2,7);
+    printf("6.date:%d/%d/%d  level:%s  score:%d  turn:%d",new_user.historyy[2].day,
+    new_user.historyy[2].month,new_user.historyy[2].year,new_user.historyy[2].level,
+    new_user.historyy[2].score,new_user.historyy[2].turn);
   }
 
   setcolor(7);
-  gotoxy(33,1);
+  gotoxy(25,1);
   line203:scanf("%d",&call);
   if(call==1)
   {
@@ -410,21 +438,83 @@ void game_menu_history()
   {
     hard();
   }
+  else if(call==4)
+  {
+    scoree=new_user.historyy[0].score;
+    num_dor=new_user.historyy[0].turn;
+    if(strcmp(new_user.historyy[0].level,"easy")==0)
+    {
+      easy();
+      return;
+    }
+    if(strcmp(new_user.historyy[0].level,"medium")==0)
+    {
+      medium();
+      return;
+    }
+    if(strcmp(new_user.historyy[0].level,"hard")==0)
+    {
+      hard();
+      return;
+    }
+  }
+  else if(call==5&&new_user.historyy[1].level!=NULL)
+  {
+    scoree=new_user.historyy[1].score;
+    num_dor=new_user.historyy[1].turn;
+    if(strcmp(new_user.historyy[1].level,"easy")==0)
+    {
+      easy();
+      return;
+    }
+    if(strcmp(new_user.historyy[1].level,"medium")==0)
+    {
+      medium();
+      return;
+    }
+    if(strcmp(new_user.historyy[1].level,"hard")==0)
+    {
+      hard();
+      return;
+    }
+  }
+  else if(call==6&&new_user.historyy[2].level!=NULL)
+  {
+    scoree=new_user.historyy[2].score;
+    num_dor=new_user.historyy[2].turn;
+    if(strcmp(new_user.historyy[2].level,"easy")==0)
+    {
+      easy();
+      return;
+    }
+    if(strcmp(new_user.historyy[2].level,"medium")==0)
+    {
+      medium();
+      return;
+    }
+    if(strcmp(new_user.historyy[2].level,"hard")==0)
+    {
+      hard();
+      return;
+    }
+    return;
+  }
   else
   {
-    gotoxy(10,5);
+    gotoxy(2,8);
     setcolor(4);
     printf("Choose Wisely.");
-    gotoxy(33,1);
+    gotoxy(25,1);
     goto line203;
   }
+
 }
 
 void easy()
 {
   make_board(40,25);
-  score(40,4);
-  timee=10000.000;
+  make_score_board(40,4);
+  timee=10000.000*pow(0.8,num_dor);
   discount=0.8;
   int i=0,a=10;
   for(int t=0;timee>=1000.000;t++)
@@ -462,8 +552,8 @@ void easy()
     timee =timee*(0.8);
   }
   thread_id = start_listening(my_callback_on_key_arrival);
-  timee=10000.000;
-  for(num_dor=0;timee>=1000;)
+  timee=10000.000*pow(0.8,num_dor);
+  for(;timee>=1000;)
   {
     for(num_word_har_dor=0;num_word_har_dor<10;)
     {
@@ -476,8 +566,8 @@ void easy()
 void medium()
 {
   make_board(40,25);
-  score(40,4);
-  timee=8000.000;
+  make_score_board(40,4);
+  timee=8000.000*pow(0.7,num_dor);
   discount=0.7;
   int i=0,a=10;
   for(int t=0;timee>=1000.000;t++)
@@ -512,7 +602,7 @@ void medium()
     timee =timee*(0.7);
   }
   thread_id = start_listening(my_callback_on_key_arrival);
-  timee=8000.000;
+  timee=8000.000*pow(0.7,num_dor);
   for(num_dor=0;timee>=1000;)
   {
     for(num_word_har_dor=0;num_word_har_dor<10;)
@@ -527,8 +617,8 @@ void medium()
 void hard()
 {
   make_board(40,25);
-  score(40,4);
-  timee=5000.000;
+  make_score_board(40,4);
+  timee=5000.000*pow(0.6,num_dor);
   discount=0.6;
   int i=0,a=10;
   for(int t=0;timee>=1000.000;t++)
@@ -559,7 +649,7 @@ void hard()
     timee =timee*(0.6);
   }
   thread_id = start_listening(my_callback_on_key_arrival);
-  timee=5000.000;
+  timee=5000.000*pow(0.6,num_dor);
   for(num_dor=0;timee>=1000;)
   {
     for(num_word_har_dor=0;num_word_har_dor<10;)
@@ -665,17 +755,12 @@ void print(int color,double discount)
     words *cur=head->next;
     for(int t=0;cur!=NULL&&t<=num_check_word;t++)
     {
-      if(row==25)
-        {
-          game_over();
-          return;
-        }
       gotoxy(10,row-t);
       char s[30]="                             ";
       printf("%s",s);
       gotoxy(10,row-t);
       setcolor(color);
-      printf("%s",cur->word);
+      printf("%s %d %d %d",cur->word,num_all_printed_word,num_all_deleted_word,max_word);
       setcolor(1);
       gotoxy(17,27);
       printf("%d",scoree);
@@ -686,17 +771,17 @@ void print(int color,double discount)
           return;
         }
     }
-    gotoxy(col,row);
-    num_all_printed_word++;
-    num_check_word++;
-    num_word_har_dor++;
-    row++;
     if(num_word_har_dor==10)
       {
         timee=timee*discount;
         num_dor++;
         num_word_har_dor=0;
       }
+    gotoxy(col,row);
+    num_all_printed_word++;
+    num_check_word++;
+    num_word_har_dor++;
+    row++;
   }
 }
 
@@ -748,7 +833,7 @@ void hidecursor()
    SetConsoleCursorInfo(consoleHandle, &info);
 }
 
-void score(int x,int y)
+void make_score_board(int x,int y)
 {
    for(int i=0;i<=x;i++)
   {
@@ -779,13 +864,25 @@ void score(int x,int y)
 
 void game_over()
 {
+  FILE *file=fopen(username,"r");
+  if(file==NULL)
+  {
+    printf("123");
+  }
+  fread(&new_user,sizeof(user),1,file);
+  fclose(file);
+  file=fopen(username,"w");
+  if(file==NULL)
+  {
+    printf("da");
+  }
   clear();
   gotoxy(10,10);
   setcolor(4);
   printf("Game Over");
   setcolor(1);
   gotoxy(10,11);
-  printf("%d",scoree);
+  printf("Score:%d",scoree);
   new_user.historyy[nobat_bazi].score=scoree;
   if(call==1)
   {
@@ -810,7 +907,7 @@ void game_over()
   }
   gotoxy(10,13);
   setcolor(3);
-  printf("%d",num_dor);
+  printf("Turn:%d",num_dor);
   new_user.historyy[nobat_bazi].turn=num_dor;
   gotoxy(0,14);
   setcolor(7);
@@ -818,9 +915,9 @@ void game_over()
   time_t now;
   time(&now);
   struct tm *local = localtime(&now);
-  day = local->tm_mday;            
-  month = local->tm_mon + 1;      
-  year = local->tm_year + 1900;   
+  day = local->tm_mday;
+  month = local->tm_mon + 1;
+  year = local->tm_year + 1900;
   new_user.historyy[nobat_bazi].day=day;
   new_user.historyy[nobat_bazi].month=month;
   new_user.historyy[nobat_bazi].year=year;
@@ -838,6 +935,18 @@ void game_over()
 
 void victory()
 {
+  FILE *file=fopen(username,"r");
+  if(file==NULL)
+  {
+    printf("123");
+  }
+  fread(&new_user,sizeof(user),1,file);
+  fclose(file);
+  file=fopen(username,"w");
+  if(file==NULL)
+  {
+    printf("da");
+  }
   clear();
   gotoxy(10,10);
   setcolor(4);
@@ -873,9 +982,9 @@ void victory()
   time_t now;
   time(&now);
   struct tm *local = localtime(&now);
-  day = local->tm_mday;            
-  month = local->tm_mon + 1;      
-  year = local->tm_year + 1900;   
+  day = local->tm_mday;
+  month = local->tm_mon + 1;
+  year = local->tm_year + 1900;
   new_user.historyy[nobat_bazi].day=day;
   new_user.historyy[nobat_bazi].month=month;
   new_user.historyy[nobat_bazi].year=year;
@@ -890,5 +999,3 @@ void victory()
   Sleep(5000);
   exit(1);
 }
-
-
