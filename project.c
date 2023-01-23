@@ -34,13 +34,13 @@ typedef struct words
 
 
 user new_user;
-char username[30];
+char username[30],unseen_word[21][12];
 words *head;
 unsigned long long int scoree=0;
 int call,nobat_bazi=0;
 int len=0,row=1,col=10,num_word_har_dor=0,num_dor=0;
 int num_check_word=0,max_word=0,num_all_printed_word=0;
-int max_dor=0,num_all_deleted_word=0;
+int max_dor=0,num_all_deleted_word=0,unseen_check=0;
 double timee,discount;
 HANDLE thread_id;
 
@@ -82,10 +82,7 @@ int main()
   make_long_words();
   make_hard_words();
   hidecursor();
-  // easy();
-  hard();
-  // menu();
-  // game_menu_history();
+  menu();
   WaitForSingleObject(thread_id,INFINITE);
   return 0;
 }
@@ -109,6 +106,11 @@ void my_callback_on_key_arrival(char c)
     {
       num_all_deleted_word++;
       head=head->next;
+      if(strcmp(head->next->word,"********************")==0)
+      {
+        head->next->word=unseen_word[unseen_check];
+        unseen_check++;
+      }
       num_check_word--;
       row--;
       len=0;
@@ -131,7 +133,6 @@ void my_callback_on_key_arrival(char c)
         }
         return;
       }
-
       if(strlen(head->word)>10&&strlen(head->word)<=20)
       {
         if(strpbrk(head->word,"!\"#$&'()*+,-./:;<>.?@_[]\\^'{}|~")==NULL)
@@ -167,6 +168,11 @@ void my_callback_on_key_arrival(char c)
     {
       num_all_deleted_word++;
       head=head->next;
+      if(strcmp(head->next->word,"********************")==0)
+      {
+        head->next->word=unseen_word[unseen_check];
+        unseen_check++;
+      }
       num_check_word--;
       row--;
       len=0;
@@ -180,14 +186,16 @@ void my_callback_on_key_arrival(char c)
 
   if(c=='\b'&&num_all_deleted_word<max_word)
   {
-    if(len!=0)
+    if(len>0)
     {
       len--;
       col--;
+      gotoxy(col,row-1);
+      setcolor(7);
+      printf("%c",head->next->word[len]);
+      return;
     }
-    gotoxy(col,row-1);
-    setcolor(7);
-    printf("%c",head->next->word[len]);
+
     if(len==0)
     {
       if(head->back!=NULL&&row>0)
@@ -299,7 +307,6 @@ void sign_in()
     scanf("%s",password);
     if(strcmp(new_user.password,password)==0)
     {
-      nobat_bazi=new_user.nobat_bazi;
       game_menu_history();
     }
     else
@@ -339,13 +346,14 @@ void sign_up()
   printf("*Username:");
   setcolor(7);
   scanf("%s",new_user.username);
+  strcpy(username,new_user.username);
   gotoxy(1,5);
   setcolor(6);
   printf("*Password:");
   setcolor(7);
-  new_user.nobat_bazi=0;
   scanf("%s",new_user.password);
-  FILE *file=fopen(new_user.username,"w+");
+  new_user.nobat_bazi=0;
+  FILE *file=fopen(new_user.username,"w");
   fwrite(&new_user,sizeof(user),1,file);
   fclose(file);
   game_menu();
@@ -366,6 +374,7 @@ void game_menu()
   setcolor(7);
   gotoxy(24,1);
   line203:scanf("%d",&call);
+  nobat_bazi=0;
   if(call==1)
   {
     easy();
@@ -403,9 +412,15 @@ void game_menu_history()
   printf("3.Hard");
   gotoxy(2,5);
   setcolor(2);
-  printf("4.date:%d/%d/%d  level:%s  score:%d  turn:%d",new_user.historyy[0].day,
-  new_user.historyy[0].month,new_user.historyy[0].year,new_user.historyy[0].level,
-  new_user.historyy[0].score,new_user.historyy[0].turn);
+  FILE *file=fopen(username,"r");
+  fread(&new_user,sizeof(user),1,file);
+  nobat_bazi=new_user.nobat_bazi;
+  if(new_user.historyy[0].level!=NULL)
+  {
+    printf("4.date:%d/%d/%d  level:%s  score:%d  turn:%d",new_user.historyy[0].day,
+    new_user.historyy[0].month,new_user.historyy[0].year,new_user.historyy[0].level,
+    new_user.historyy[0].score,new_user.historyy[0].turn);
+  }
 
   if(new_user.historyy[1].level!=NULL)
   {
@@ -519,6 +534,7 @@ void easy()
   int i=0,a=10;
   for(int t=0;timee>=1000.000;t++)
   {
+    int unseen=rand()%10;
     char word[21][40];
     int num_normal_word=10,num_long_word=0;
     for(;i<a;i++)
@@ -526,15 +542,39 @@ void easy()
       int choose = (rand()%10)+1;
       if(choose>(10-num_normal_word))
       {
-        push_back(chose_word_from_normal(word[i]));
+        if(max_word%10!=unseen)
+        {
+          push_back(chose_word_from_normal(word[i]));
+        }
+        else
+        {
+          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          push_back("********************");
+        }
       }
       else if(choose<=num_long_word)
       {
-        push_back(chose_word_from_long(word[i]));
+        if(max_word%10!=unseen)
+        {
+          push_back(chose_word_from_long(word[i]));
+        }
+        else
+        {
+          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          push_back("********************");
+        }
       }
       else
       {
-        push_back(chose_word_from_hard(word[i]));
+        if(max_word%10!=unseen)
+        {
+          push_back(chose_word_from_hard(word[i]));
+        }
+        else
+        {
+          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          push_back("********************");
+        }
       }
       max_word++;
     }
@@ -572,6 +612,7 @@ void medium()
   int i=0,a=10;
   for(int t=0;timee>=1000.000;t++)
   {
+    int unseen=rand()%10;
     char word[21][40];
     int num_normal_word=5,num_hard_word=0;
     for(;i<a;i++)
@@ -579,15 +620,39 @@ void medium()
       int choose = (rand()%10)+1;
       if(choose>(10-num_normal_word))
       {
-        push_back(chose_word_from_normal(word[i]));
+        if(max_word%10!=unseen)
+        {
+          push_back(chose_word_from_normal(word[i]));
+        }
+        else
+        {
+          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          push_back("********************");
+        }
       }
       else if(choose<=num_hard_word)
       {
-        push_back(chose_word_from_hard(word[i]));
+        if(max_word%10!=unseen)
+        {
+          push_back(chose_word_from_hard(word[i]));
+        }
+        else
+        {
+          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          push_back("********************");
+        }
       }
       else
       {
-        push_back(chose_word_from_long(word[i]));
+        if(max_word%10!=unseen)
+        {
+          push_back(chose_word_from_long(word[i]));
+        }
+        else
+        {
+          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          push_back("********************");
+        }
       }
       max_word++;
     }
@@ -623,6 +688,7 @@ void hard()
   int i=0,a=10;
   for(int t=0;timee>=1000.000;t++)
   {
+    int unseen=rand()%10;
     char word[21][40];
     int num_normal_word=3,num_hard_word=1;
     for(;i<a;i++)
@@ -630,15 +696,39 @@ void hard()
       int choose = (rand()%10)+1;
       if(choose>(10-num_normal_word))
       {
-        push_back(chose_word_from_normal(word[i]));
+        if(max_word%10!=unseen)
+        {
+          push_back(chose_word_from_normal(word[i]));
+        }
+        else
+        {
+          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          push_back("********************");
+        }
       }
       else if(choose<=num_hard_word)
       {
-        push_back(chose_word_from_hard(word[i]));
+        if(max_word%10!=unseen)
+        {
+          push_back(chose_word_from_hard(word[i]));
+        }
+        else
+        {
+          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          push_back("********************");
+        }
       }
       else
       {
-        push_back(chose_word_from_long(word[i]));
+        if(max_word%10!=unseen)
+        {
+          push_back(chose_word_from_long(word[i]));
+        }
+        else
+        {
+          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          push_back("********************");
+        }
       }
       max_word++;
     }
@@ -760,7 +850,7 @@ void print(int color,double discount)
       printf("%s",s);
       gotoxy(10,row-t);
       setcolor(color);
-      printf("%s %d %d %d",cur->word,num_all_printed_word,num_all_deleted_word,max_word);
+      printf("%s",cur->word);
       setcolor(1);
       gotoxy(17,27);
       printf("%d",scoree);
@@ -930,6 +1020,7 @@ void game_over()
   fwrite(&new_user,sizeof(user),1,file);
   fclose(file);
   Sleep(5000);
+  clear();
   exit(1);
 }
 
@@ -997,5 +1088,6 @@ void victory()
   fwrite(&new_user,sizeof(user),1,file);
   fclose(file);
   Sleep(5000);
+  clear();
   exit(1);
 }
