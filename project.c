@@ -7,14 +7,13 @@
 #include "helper_windows.h"
 #include "colorize.h"
 
-
-
 typedef struct history
 {
   unsigned long long int score;
   int day,month,year,turn;
   char *level;
 }history;
+
 typedef struct user
 {
   char name[20];
@@ -32,18 +31,16 @@ typedef struct words
   struct words *back;
 }words;
 
-
+HANDLE thread_id;
 user new_user;
-char username[30],unseen_word[21][12];
 words *head;
+char username[30],unseen_word[21][12];
 unsigned long long int scoree=0;
 int call,nobat_bazi=0;
 int len=0,row=1,col=10,num_word_har_dor=0,num_dor=0;
 int num_check_word=0,max_word=0,num_all_printed_word=0;
 int max_dor=0,num_all_deleted_word=0,unseen_check=0;
 double timee,discount;
-HANDLE thread_id;
-
 
 words* createwords(char* word);
 void push_back(char* word);
@@ -61,18 +58,23 @@ void game_menu();
 void easy();
 void medium();
 void hard();
+void right_hand();
+void left_hand();
 void make_normal_words();
 void make_long_words();
 void make_hard_words();
-void print(int color,double discount);
-char*chose_word_from_normal(char* word);
-char*chose_word_from_long(char* word);
-char*chose_word_from_hard(char* word);
+void make_right_hand_words();
+void make_left_hand_words();
+void print(int color , double discount);
+char*choose_word_from_normal(char* word);
+char*choose_word_from_long(char* word);
+char*choose_word_from_hard(char* word);
+char*choose_word_from_right_hand(char* word);
+char*choose_word_from_left_hand(char* word);
 void hidecursor();
 void game_over();
 void victory();
 void make_score_board(int x,int y);
-
 
 int main()
 {
@@ -81,6 +83,8 @@ int main()
   make_normal_words();
   make_long_words();
   make_hard_words();
+  make_right_hand_words();
+  make_left_hand_words();
   hidecursor();
   menu();
   WaitForSingleObject(thread_id,INFINITE);
@@ -361,7 +365,7 @@ void sign_up()
 
 void game_menu()
 {
-  make_board(40,6);
+  make_board(40,10);
   gotoxy(2,1);
   setcolor(1);
   printf("Select Your Game Level:");
@@ -371,6 +375,10 @@ void game_menu()
   printf("2.Medium");
   gotoxy(2,4);
   printf("3.Hard");
+  gotoxy(2,5);
+  printf("4.Right Hand");
+  gotoxy(2,6);
+  printf("5.Left Hand");
   setcolor(7);
   gotoxy(24,1);
   line203:scanf("%d",&call);
@@ -387,6 +395,14 @@ void game_menu()
   {
     hard();
   }
+  else if(call==4)
+  {
+    right_hand();
+  }
+  else if(call==5)
+  {
+    left_hand();
+  }
   else
   {
     gotoxy(2,5);
@@ -394,12 +410,11 @@ void game_menu()
     printf("Choose Wisely.");
     goto line203;
   }
-
 }
 
 void game_menu_history()
 {
-  make_board(50,10);
+  make_board(50,15);
   gotoxy(2,1);
   setcolor(1);
   printf("Select Your Game Level:");
@@ -411,13 +426,17 @@ void game_menu_history()
   gotoxy(2,4);
   printf("3.Hard");
   gotoxy(2,5);
+  printf("4.Right Hand");
+  gotoxy(2,6);
+  printf("5.Left Hand");
+  gotoxy(2,7);
   setcolor(2);
   FILE *file=fopen(username,"r");
   fread(&new_user,sizeof(user),1,file);
   nobat_bazi=new_user.nobat_bazi;
   if(new_user.historyy[0].level!=NULL)
   {
-    printf("4.date:%d/%d/%d  level:%s  score:%d  turn:%d",new_user.historyy[0].day,
+    printf("6.date:%d/%d/%d  level:%s  score:%d  turn:%d",new_user.historyy[0].day,
     new_user.historyy[0].month,new_user.historyy[0].year,new_user.historyy[0].level,
     new_user.historyy[0].score,new_user.historyy[0].turn);
   }
@@ -425,7 +444,7 @@ void game_menu_history()
   if(new_user.historyy[1].level!=NULL)
   {
     gotoxy(2,6);
-    printf("5.date:%d/%d/%d  level:%s  score:%d  turn:%d",new_user.historyy[1].day,
+    printf("7.date:%d/%d/%d  level:%s  score:%d  turn:%d",new_user.historyy[1].day,
     new_user.historyy[1].month,new_user.historyy[1].year,new_user.historyy[1].level,
     new_user.historyy[1].score,new_user.historyy[1].turn);
   }
@@ -433,7 +452,7 @@ void game_menu_history()
   if(new_user.historyy[2].level!=NULL)
   {
     gotoxy(2,7);
-    printf("6.date:%d/%d/%d  level:%s  score:%d  turn:%d",new_user.historyy[2].day,
+    printf("8.date:%d/%d/%d  level:%s  score:%d  turn:%d",new_user.historyy[2].day,
     new_user.historyy[2].month,new_user.historyy[2].year,new_user.historyy[2].level,
     new_user.historyy[2].score,new_user.historyy[2].turn);
   }
@@ -455,6 +474,14 @@ void game_menu_history()
   }
   else if(call==4)
   {
+    right_hand();
+  }
+  else if(call==5)
+  {
+    left_hand();
+  }
+  else if(call==6)
+  {
     scoree=new_user.historyy[0].score;
     num_dor=new_user.historyy[0].turn;
     if(strcmp(new_user.historyy[0].level,"easy")==0)
@@ -472,8 +499,18 @@ void game_menu_history()
       hard();
       return;
     }
+    if(strcmp(new_user.historyy[0].level,"right hand")==0)
+    {
+      right_hand();
+      return;
+    }
+    if(strcmp(new_user.historyy[0].level,"left hand")==0)
+    {
+      left_hand();
+      return;
+    }
   }
-  else if(call==5&&new_user.historyy[1].level!=NULL)
+  else if(call==7&&new_user.historyy[1].level!=NULL)
   {
     scoree=new_user.historyy[1].score;
     num_dor=new_user.historyy[1].turn;
@@ -492,8 +529,18 @@ void game_menu_history()
       hard();
       return;
     }
+    if(strcmp(new_user.historyy[1].level,"right hand")==0)
+    {
+      right_hand();
+      return;
+    }
+    if(strcmp(new_user.historyy[1].level,"left hand")==0)
+    {
+      left_hand();
+      return;
+    }
   }
-  else if(call==6&&new_user.historyy[2].level!=NULL)
+  else if(call==8&&new_user.historyy[2].level!=NULL)
   {
     scoree=new_user.historyy[2].score;
     num_dor=new_user.historyy[2].turn;
@@ -512,7 +559,16 @@ void game_menu_history()
       hard();
       return;
     }
-    return;
+    if(strcmp(new_user.historyy[2].level,"right hand")==0)
+    {
+      right_hand();
+      return;
+    }
+    if(strcmp(new_user.historyy[2].level,"left hand")==0)
+    {
+      left_hand();
+      return;
+    }
   }
   else
   {
@@ -544,11 +600,11 @@ void easy()
       {
         if(max_word%10!=unseen)
         {
-          push_back(chose_word_from_normal(word[i]));
+          push_back(choose_word_from_normal(word[i]));
         }
         else
         {
-          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          strcpy(unseen_word[t],choose_word_from_normal(unseen_word[t]));
           push_back("********************");
         }
       }
@@ -556,11 +612,11 @@ void easy()
       {
         if(max_word%10!=unseen)
         {
-          push_back(chose_word_from_long(word[i]));
+          push_back(choose_word_from_long(word[i]));
         }
         else
         {
-          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          strcpy(unseen_word[t],choose_word_from_long(unseen_word[t]));
           push_back("********************");
         }
       }
@@ -568,11 +624,11 @@ void easy()
       {
         if(max_word%10!=unseen)
         {
-          push_back(chose_word_from_hard(word[i]));
+          push_back(choose_word_from_hard(word[i]));
         }
         else
         {
-          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          strcpy(unseen_word[t],choose_word_from_hard(unseen_word[t]));
           push_back("********************");
         }
       }
@@ -622,11 +678,11 @@ void medium()
       {
         if(max_word%10!=unseen)
         {
-          push_back(chose_word_from_normal(word[i]));
+          push_back(choose_word_from_normal(word[i]));
         }
         else
         {
-          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          strcpy(unseen_word[t],choose_word_from_normal(unseen_word[t]));
           push_back("********************");
         }
       }
@@ -634,11 +690,11 @@ void medium()
       {
         if(max_word%10!=unseen)
         {
-          push_back(chose_word_from_hard(word[i]));
+          push_back(choose_word_from_hard(word[i]));
         }
         else
         {
-          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          strcpy(unseen_word[t],choose_word_from_hard(unseen_word[t]));
           push_back("********************");
         }
       }
@@ -646,11 +702,11 @@ void medium()
       {
         if(max_word%10!=unseen)
         {
-          push_back(chose_word_from_long(word[i]));
+          push_back(choose_word_from_long(word[i]));
         }
         else
         {
-          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          strcpy(unseen_word[t],choose_word_from_long(unseen_word[t]));
           push_back("********************");
         }
       }
@@ -698,11 +754,11 @@ void hard()
       {
         if(max_word%10!=unseen)
         {
-          push_back(chose_word_from_normal(word[i]));
+          push_back(choose_word_from_normal(word[i]));
         }
         else
         {
-          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          strcpy(unseen_word[t],choose_word_from_normal(unseen_word[t]));
           push_back("********************");
         }
       }
@@ -710,11 +766,11 @@ void hard()
       {
         if(max_word%10!=unseen)
         {
-          push_back(chose_word_from_hard(word[i]));
+          push_back(choose_word_from_hard(word[i]));
         }
         else
         {
-          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          strcpy(unseen_word[t],choose_word_from_hard(unseen_word[t]));
           push_back("********************");
         }
       }
@@ -722,11 +778,11 @@ void hard()
       {
         if(max_word%10!=unseen)
         {
-          push_back(chose_word_from_long(word[i]));
+          push_back(choose_word_from_long(word[i]));
         }
         else
         {
-          strcpy(unseen_word[t],chose_word_from_normal(unseen_word[t]));
+          strcpy(unseen_word[t],choose_word_from_long(unseen_word[t]));
           push_back("********************");
         }
       }
@@ -741,6 +797,96 @@ void hard()
   thread_id = start_listening(my_callback_on_key_arrival);
   timee=5000.000*pow(0.6,num_dor);
   for(num_dor=0;timee>=1000;)
+  {
+    for(num_word_har_dor=0;num_word_har_dor<10;)
+    {
+      print(7,discount);
+      Sleep(timee);
+    }
+  }
+}
+
+void right_hand()
+{
+  make_board(40,25);
+  make_score_board(40,4);
+  timee=10000.000*pow(0.8,num_dor);
+  discount=0.8;
+  int i=0,a=10;
+  for(int t=0;timee>=1000.000;t++)
+  {
+    int unseen=rand()%10;
+    char word[21][40];
+    for(;i<a;i++)
+    {
+      if(max_word%10!=unseen)
+      {
+        push_back(choose_word_from_right_hand(word[i]));
+      }
+      else
+      {
+        strcpy(unseen_word[t],choose_word_from_right_hand(unseen_word[t]));
+        push_back("********************");
+      }
+      max_word++;
+    }
+    if(a==40)
+    {
+      a=0;
+      i=0;
+    }
+    a+=10;
+    timee =timee*(0.8);
+  }
+
+  thread_id = start_listening(my_callback_on_key_arrival);
+  timee=10000.000*pow(0.8,num_dor);
+  for(;timee>=1000;)
+  {
+    for(num_word_har_dor=0;num_word_har_dor<10;)
+    {
+      print(7,discount);
+      Sleep(timee);
+    }
+  }
+}
+
+void left_hand()
+{
+  make_board(40,25);
+  make_score_board(40,4);
+  timee=10000.000*pow(0.8,num_dor);
+  discount=0.8;
+  int i=0,a=10;
+  for(int t=0;timee>=1000.000;t++)
+  {
+    int unseen=rand()%10;
+    char word[21][40];
+    for(;i<a;i++)
+    {
+      if(max_word%10!=unseen)
+      {
+        push_back(choose_word_from_left_hand(word[i]));
+      }
+      else
+      {
+        strcpy(unseen_word[t],choose_word_from_left_hand(unseen_word[t]));
+        push_back("********************");
+      }
+      max_word++;
+    }
+    if(a==40)
+    {
+      a=0;
+      i=0;
+    }
+    a+=10;
+    timee =timee*(0.8);
+  }
+
+  thread_id = start_listening(my_callback_on_key_arrival);
+  timee=10000.000*pow(0.8,num_dor);
+  for(;timee>=1000;)
   {
     for(num_word_har_dor=0;num_word_har_dor<10;)
     {
@@ -837,6 +983,38 @@ void make_hard_words()
   fclose(file);
 }
 
+void make_right_hand_words()
+{
+  char check[30];
+  FILE *file=fopen("words.txt","r");
+  FILE *write=fopen("Righte Hand Words.txt","w");
+  for(int i=0;i<9998;i++)
+  {
+    fscanf(file,"%s",check);
+    if(strpbrk(check,"qwertasdfzxcv")==NULL)
+    {
+      fprintf(write,"%s\n",check);
+    }
+  }
+  fclose(file);
+}
+
+void make_left_hand_words()
+{
+  char check[30];
+  FILE *file=fopen("words.txt","r");
+  FILE *write=fopen("Left Hand Words.txt","w");
+  for(int i=0;i<9998;i++)
+  {
+    fscanf(file,"%s",check);
+    if(strpbrk(check,"yuiopghjklbnm")==NULL)
+    {
+      fprintf(write,"%s\n",check);
+    }
+  }
+  fclose(file);
+}
+
 void print(int color,double discount)
 {
 
@@ -875,11 +1053,11 @@ void print(int color,double discount)
   }
 }
 
-char*chose_word_from_normal(char* word)
+char *choose_word_from_normal(char* word)
 {
   word=malloc(11*sizeof(char));
   FILE *normal=fopen("Normal Words.txt","r+");
-  int random=(rand()%9115);
+  int random=(rand()%9258);
     for(int i=0;i<random;i++)
     {
       fscanf(normal,"%s",word);
@@ -888,7 +1066,7 @@ char*chose_word_from_normal(char* word)
   return word;
 }
 
-char*chose_word_from_long(char* word)
+char*choose_word_from_long(char* word)
 {
   word=malloc(21*sizeof(char));
   FILE *longg=fopen("Long Words.txt","r+");
@@ -901,7 +1079,7 @@ char*chose_word_from_long(char* word)
   return word;
 }
 
-char*chose_word_from_hard(char* word)
+char*choose_word_from_hard(char* word)
 {
   word=malloc(21*sizeof(char));
   FILE *hard=fopen("Hard Words.txt","r+");
@@ -911,6 +1089,32 @@ char*chose_word_from_hard(char* word)
       fscanf(hard,"%s",word);
     }
   fclose(hard);
+  return word;
+}
+
+char*choose_word_from_right_hand(char* word)
+{
+  word=malloc(21*sizeof(char));
+  FILE *file=fopen("Righte Hand Words.txt","r");
+  int random=(rand()%296);
+    for(int i=0;i<random;i++)
+    {
+      fscanf(file,"%s",word);
+    }
+  fclose(file);
+  return word;
+}
+
+char*choose_word_from_left_hand(char* word)
+{
+  word=malloc(21*sizeof(char));
+  FILE *file=fopen("Left Hand Words.txt","r");
+  int random=(rand()%465);
+    for(int i=0;i<random;i++)
+    {
+      fscanf(file,"%s",word);
+    }
+  fclose(file);
   return word;
 }
 
@@ -995,6 +1199,20 @@ void game_over()
     setcolor(2);
     printf("hard");
   }
+  else if(call==4)
+  {
+    new_user.historyy[nobat_bazi].level="rigt hand";
+    gotoxy(10,12);
+    setcolor(2);
+    printf("rigt hand");
+  }
+  else if(call==5)
+  {
+    new_user.historyy[nobat_bazi].level="left hand";
+    gotoxy(10,12);
+    setcolor(2);
+    printf("left hand");
+  }
   gotoxy(10,13);
   setcolor(3);
   printf("Turn:%d",num_dor);
@@ -1066,6 +1284,20 @@ void victory()
     gotoxy(10,12);
     setcolor(2);
     printf("hard");
+  }
+  else if(call==4)
+  {
+    new_user.historyy[nobat_bazi].level="rigt hand";
+    gotoxy(10,12);
+    setcolor(2);
+    printf("rigt hand");
+  }
+  else if(call==5)
+  {
+    new_user.historyy[nobat_bazi].level="left hand";
+    gotoxy(10,12);
+    setcolor(2);
+    printf("left hand");
   }
   gotoxy(0,13);
   setcolor(7);
